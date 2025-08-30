@@ -70,7 +70,7 @@ justify-content: center; align-items: center;">
 <br>
 
 {% if pasta.content != "" %}
-<div class="code-container">
+<div class="code-container" data-encrypted="{% if pasta.encrypt_client %}true{% else %}false{% endif %}">
   <div style="clear: both;">
     {% if pasta.extension == "auto" || pasta.encrypt_client %}
     <pre><code id="code">{{pasta.content_escaped()}}</code></pre>
@@ -338,7 +338,25 @@ pasta.file_embeddable() && !pasta.encrypt_client %}
         return;
     }
 
+    // Get encryption status from data attribute
+    const isEncrypted = codeContainer.dataset.encrypted === 'true';
+    let isDecrypted = !isEncrypted; // Start as decrypted if not encrypted
+
     function updateMarkdownView() {
+      // Don't process markdown if content is encrypted and not yet decrypted
+      if (isEncrypted && !isDecrypted) {
+        codeContainer.style.display = "block";
+        markdownPreview.style.display = "none";
+        renderMarkdownCheckbox.checked = false;
+        renderMarkdownCheckbox.disabled = true;
+        return;
+      }
+
+      // Enable checkbox once content is decrypted
+      if (isEncrypted && isDecrypted) {
+        renderMarkdownCheckbox.disabled = false;
+      }
+
       if (renderMarkdownCheckbox.checked) {
         // Get the raw text content from the code element and decode HTML entities
         const rawTextContent = decodeEntity(codeElement.textContent || codeElement.innerText);
@@ -361,8 +379,37 @@ pasta.file_embeddable() && !pasta.encrypt_client %}
 
     renderMarkdownCheckbox.addEventListener("change", updateMarkdownView);
 
-    // Initial state is unchecked, so no need to call updateMarkdownView() on load
-    // unless we want to default to checked, which we don't.
+    // Override the decrypt button click handler to update markdown state
+    if (typeof decryptButton !== 'undefined') {
+      (function() {
+        const originalDecryptButtonClick = decryptButton.onclick;
+        decryptButton.onclick = function() {
+          const password = passwordField.value;
+          const contentDecrypted = escapeHtml(decryptWithPassword(password, content));
+          if (contentDecrypted) {
+            content = contentDecrypted;
+            contentElement.innerHTML = contentDecrypted;
+            hljs.highlightAll();
+            contentElement.innerHTML = wrapStringInCodeLines(contentElement.innerHTML);
+            
+            // Mark as decrypted and update markdown view
+            isDecrypted = true;
+            updateMarkdownView();
+          }
+        };
+      })();
+    }
+
+    // Initial state - disable markdown if encrypted
+    if (isEncrypted) {
+      renderMarkdownCheckbox.checked = false;
+      renderMarkdownCheckbox.disabled = true;
+    }
+    
+    // Don't call updateMarkdownView() on load for encrypted content
+    if (!isEncrypted) {
+      updateMarkdownView();
+    }
   });
 </script>
 

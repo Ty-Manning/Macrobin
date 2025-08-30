@@ -306,7 +306,7 @@ pub async fn create(
         new_pasta.encrypted_key = Some(encrypt(id.to_string().as_str(), &plain_key));
     }
 
-    if new_pasta.encrypt_server && !new_pasta.readonly && new_pasta.content != *"" {
+    if new_pasta.encrypt_server && new_pasta.content != *"" {
         if new_pasta.encrypt_client {
             new_pasta.content = encrypt(&new_pasta.content, &random_key);
         } else {
@@ -314,7 +314,7 @@ pub async fn create(
         }
     }
 
-    if new_pasta.file.is_some() && new_pasta.encrypt_server && !new_pasta.readonly {
+    if new_pasta.file.is_some() && new_pasta.encrypt_server {
         let filepath = format!(
             "{}/attachments/{}/{}",
             ARGS.data_dir,
