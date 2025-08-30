@@ -25,6 +25,9 @@ pub async fn list(data: web::Data<AppState>) -> HttpResponse {
 
     remove_expired(&mut pastas);
 
+    // Filter out private pastas, keep public and read-only
+    pastas.retain(|p| !p.private);
+
     // sort pastas in reverse-chronological order of creation time
     pastas.sort_by(|a, b| b.created.cmp(&a.created));
 

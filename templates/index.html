@@ -152,7 +152,7 @@
                 </optgroup>
                 {% if args.enable_readonly %}
                 <optgroup label="Unencrypted (protected)">
-                    <option value="readonly">Read-only</option>
+                    <option selected value="readonly">Read-only</option>
                 </optgroup>
                 {%- endif %}
                 {% if args.encryption_client_side || args.encryption_server_side %}

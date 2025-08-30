@@ -94,7 +94,7 @@ pub async fn create(
         file: None,
         extension: String::from(""),
         private: false,
-        readonly: false,
+        readonly: true, // Default to read-only
         editable: ARGS.editable,
         encrypt_server: false,
         encrypted_key: Some(String::from("")),
@@ -132,13 +132,32 @@ pub async fn create(
             "privacy" => {
                 while let Some(chunk) = field.try_next().await? {
                     let privacy = std::str::from_utf8(&chunk).unwrap();
-                    new_pasta.private = match privacy {
-                        "public" => false,
-                        _ => true,
-                    };
-                    new_pasta.readonly = match privacy {
-                        "readonly" => true,
-                        _ => false,
+                    // Set private and readonly based on privacy selection
+                    match privacy {
+                        "public" => {
+                            new_pasta.private = false; // Public pastas are not private
+                            new_pasta.readonly = false; // Public pastas are editable
+                        }
+                        "unlisted" => {
+                            new_pasta.private = true; // Unlisted pastas are private
+                            new_pasta.readonly = true; // Unlisted pastas are read-only
+                        }
+                        "readonly" => {
+                            new_pasta.private = false; // Read-only pastas are NOT private, so they appear on /list
+                            new_pasta.readonly = true; // Read-only pastas are read-only
+                        }
+                        "private" => {
+                            new_pasta.private = true; // Private pastas are private
+                            new_pasta.readonly = true; // Private pastas are read-only
+                        }
+                        "secret" => {
+                            new_pasta.private = true; // Secret pastas are private
+                            new_pasta.readonly = true; // Secret pastas are read-only
+                        }
+                        _ => { // Fallback for any unexpected values
+                            new_pasta.private = true;
+                            new_pasta.readonly = true;
+                        }
                     };
                     new_pasta.encrypt_client = match privacy {
                         "secret" => true,
